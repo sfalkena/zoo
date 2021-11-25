@@ -14,8 +14,8 @@ from zookeeper.tf import Experiment
 
 from larq_zoo.core import utils
 
-
 class TrainLarqZooModel(Experiment):
+
     # Save model checkpoints.
     use_model_checkpointing: bool = Field(True)
 
@@ -35,10 +35,11 @@ class TrainLarqZooModel(Experiment):
     @Field
     def output_dir(self) -> Union[str, os.PathLike]:
         return (
-            Path.home()
+            Path("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/larq")
             / "zookeeper-logs"
             / self.dataset.__class__.__name__
             / self.__class__.__name__
+            / self.experiment_name
             / datetime.now().strftime("%Y%m%d_%H%M")
         )
 
@@ -59,6 +60,7 @@ class TrainLarqZooModel(Experiment):
     @Field
     def callbacks(self) -> List[tf.keras.callbacks.Callback]:
         callbacks = []
+        print(self.output_dir)
         if self.use_model_checkpointing:
             callbacks.append(
                 utils.ModelCheckpoint(
@@ -72,7 +74,7 @@ class TrainLarqZooModel(Experiment):
         if self.use_tensorboard:
             callbacks.append(
                 keras.callbacks.TensorBoard(
-                    log_dir=self.output_dir, write_graph=False, profile_batch=0
+                    log_dir=self.output_dir, write_graph=False, histogram_freq=1, profile_batch=0
                 )
             )
         return callbacks
@@ -86,7 +88,7 @@ class TrainLarqZooModel(Experiment):
             decoders=self.preprocessing.decoders
         )
         train_data = (
-            train_data.cache()
+            train_data.cache("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/datasets/train_cache")
             .shuffle(10 * self.batch_size)
             .repeat()
             .map(
@@ -101,7 +103,7 @@ class TrainLarqZooModel(Experiment):
             decoders=self.preprocessing.decoders
         )
         validation_data = (
-            validation_data.cache()
+            validation_data.cache("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/datasets/val_cache")
             .repeat()
             .map(self.preprocessing, num_parallel_calls=tf.data.experimental.AUTOTUNE)
             .batch(self.batch_size)

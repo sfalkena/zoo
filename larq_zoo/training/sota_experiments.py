@@ -15,7 +15,9 @@ from larq_zoo.training.train import TrainLarqZooModel
 class TrainQuickNet(TrainLarqZooModel):
     model = ComponentField(QuickNetFactory)
     epochs = Field(600)
-    batch_size = Field(2048)
+    # batch_size = Field(2048)
+    batch_size = Field(1024)
+    experiment_name = Field("quicknet")
 
     @Field
     def optimizer(self):

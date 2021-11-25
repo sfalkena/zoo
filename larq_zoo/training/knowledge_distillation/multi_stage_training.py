@@ -52,7 +52,7 @@ class TrainingPhase(TrainLarqZooModel):
             return Path(self.parent_output_dir) / f"stage_{self.stage}"
 
         return (
-            Path.home()
+            Path("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/larq")
             / "zookeeper-logs"
             / self.dataset.__class__.__name__
             / self.__class__.__name__
@@ -162,7 +162,7 @@ class MultiStageExperiment:
         ```
         """
         return str(
-            Path.home()
+            Path("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/larq")
             / "zookeeper-logs"
             / "knowledge_distillation"
             / self.__class__.__name__
