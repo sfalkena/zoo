@@ -35,6 +35,7 @@ class EpochModelCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         print(logs)
                
 class TrainLarqZooModel(Experiment):
+
     # Save model checkpoints.
     use_model_checkpointing: bool = Field(True)
 
@@ -84,6 +85,7 @@ class TrainLarqZooModel(Experiment):
     @Field
     def callbacks(self) -> List[tf.keras.callbacks.Callback]:
         callbacks = []
+        print(self.output_dir)
         if self.use_model_checkpointing:
             callbacks.append(
                 EpochModelCheckpoint(self.checkpoint_dir, self.model, self.optimizer)

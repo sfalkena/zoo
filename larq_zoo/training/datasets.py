@@ -7,6 +7,8 @@ class ImageNet(TFDSDataset):
     name = Field("imagenet2012:5.1.*")
     train_split = Field("train")
     validation_split = Field("validation")
+    data_dir = Field("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/datasets/imagenet/")
+    download = Field(True)
 
 
 @component
