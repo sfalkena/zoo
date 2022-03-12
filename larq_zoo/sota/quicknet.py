@@ -39,6 +39,7 @@ class QuickNetFactory(ModelFactory):
     name = "quicknet"
     section_blocks: Sequence[int] = Field((4, 4, 4, 4))
     section_filters: Sequence[int] = Field((64, 128, 256, 512))
+    lab_blocks: Sequence[bool] = Field()
 
     @property
     def imagenet_weights_path(self):
@@ -58,9 +59,6 @@ class QuickNetFactory(ModelFactory):
             file_hash="204414e438373f14f6056a1c098249f505a87dd238e18d3a47a9bd8b66227881",
         )
 
-    @property
-    def input_quantizer(self):
-        return lq.quantizers.SteSign(clip_value=1.25)
 
     @property
     def kernel_quantizer(self):
@@ -104,9 +102,11 @@ class QuickNetFactory(ModelFactory):
         )(x)
         return tf.keras.layers.BatchNormalization()(x)
 
-    def residual_block(self, x: tf.Tensor) -> tf.Tensor:
+    def residual_block(self, x: tf.Tensor, use_lab: bool) -> tf.Tensor:
         """Standard residual block, without strides or filter changes."""
-
+        
+        self.input_quantizer = lq.quantizers.LAB() if use_lab else lq.quantizers.SteSign(clip_value=1.25)
+        
         residual = x
         x = lq.layers.QuantConv2D(
             int(x.shape[-1]),
@@ -131,7 +131,6 @@ class QuickNetFactory(ModelFactory):
         strides: int,
     ) -> tf.Tensor:
         """Pointwise transition block."""
-
         x = tf.keras.layers.Activation("relu")(x)
         x = tf.keras.layers.MaxPool2D(pool_size=strides, strides=1)(x)
         x = tf.keras.layers.DepthwiseConv2D(
@@ -160,7 +159,7 @@ class QuickNetFactory(ModelFactory):
             for layer in range(layers):
                 if filters != x.shape[-1]:
                     x = self.transition_block(x, filters, strides=2)
-                x = self.residual_block(x)
+                x = self.residual_block(x, self.lab_blocks[block])
 
         if self.include_top:
             x = tf.keras.layers.Activation("relu")(x)
@@ -241,6 +240,7 @@ def QuickNet(
     weights: Optional[str] = "imagenet",
     include_top: bool = True,
     num_classes: int = 1000,
+    lab_blocks: Sequence[int],
 ) -> tf.keras.models.Model:
     """Instantiates the QuickNet architecture.
 
@@ -268,13 +268,13 @@ def QuickNet(
             It should have exactly 3 inputs channels.
         input_tensor: optional Keras tensor (i.e. output of `layers.Input()`) to use as
             image input for the model.
-        weights: one of `None` (random initialization), "imagenet" (pre-training on
-            ImageNet), or the path to the weights file to be loaded.
         include_top: whether to include the fully-connected layer at the top of the
             network.
         num_classes: optional number of classes to classify images into, only to be
             specified if `include_top` is True, and if no `weights` argument is
             specified.
+        lab_blocks: in which of the blocks to apply Lab binarization given in a list
+            of four booleans.
 
     # Returns
         A Keras model instance.
@@ -288,6 +288,7 @@ def QuickNet(
         weights=weights,
         include_top=include_top,
         num_classes=num_classes,
+        lab_blocks=lab_blocks,
     ).build()
 
 
@@ -295,7 +296,6 @@ def QuickNetLarge(
     *,  # Keyword arguments only
     input_shape: Optional[Sequence[Optional[int]]] = None,
     input_tensor: Optional[utils.TensorType] = None,
-    weights: Optional[str] = "imagenet",
     include_top: bool = True,
     num_classes: int = 1000,
 ) -> tf.keras.models.Model:
@@ -325,8 +325,7 @@ def QuickNetLarge(
             It should have exactly 3 inputs channels.
         input_tensor: optional Keras tensor (i.e. output of `layers.Input()`) to use as
             image input for the model.
-        weights: one of `None` (random initialization), "imagenet" (pre-training on
-            ImageNet), or the path to the weights file to be loaded.
+
         include_top: whether to include the fully-connected layer at the top of the
             network.
         num_classes: optional number of classes to classify images into, only to be
@@ -342,7 +341,6 @@ def QuickNetLarge(
     return QuickNetLargeFactory(
         input_shape=input_shape,
         input_tensor=input_tensor,
-        weights=weights,
         include_top=include_top,
         num_classes=num_classes,
     ).build()
@@ -352,7 +350,6 @@ def QuickNetSmall(
     *,  # Keyword arguments only
     input_shape: Optional[Sequence[Optional[int]]] = None,
     input_tensor: Optional[utils.TensorType] = None,
-    weights: Optional[str] = "imagenet",
     include_top: bool = True,
     num_classes: int = 1000,
 ) -> tf.keras.models.Model:
@@ -382,8 +379,6 @@ def QuickNetSmall(
             It should have exactly 3 inputs channels.
         input_tensor: optional Keras tensor (i.e. output of `layers.Input()`) to use as
             image input for the model.
-        weights: one of `None` (random initialization), "imagenet" (pre-training on
-            ImageNet), or the path to the weights file to be loaded.
         include_top: whether to include the fully-connected layer at the top of the
             network.
         num_classes: optional number of classes to classify images into, only to be
@@ -399,7 +394,6 @@ def QuickNetSmall(
     return QuickNetSmallFactory(
         input_shape=input_shape,
         input_tensor=input_tensor,
-        weights=weights,
         include_top=include_top,
         num_classes=num_classes,
     ).build()

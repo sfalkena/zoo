@@ -4,7 +4,7 @@ from zookeeper.tf import TFDSDataset
 
 @component
 class ImageNet(TFDSDataset):
-    name = Field("imagenet2012:5.0.*")
+    name = Field("imagenet2012:5.1.*")
     train_split = Field("train")
     validation_split = Field("validation")
 

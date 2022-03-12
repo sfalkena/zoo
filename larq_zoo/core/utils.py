@@ -58,6 +58,7 @@ def get_current_epoch(output_dir):
         with open(os.path.join(output_dir, "stats.json"), "r") as f:
             return json.load(f)["epoch"]
     except Exception:
+        print("no initial epoch, starting from scratch")
         return 0
 
 

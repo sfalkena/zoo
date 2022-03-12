@@ -14,31 +14,21 @@ from larq_zoo.training.train import TrainLarqZooModel
 @task
 class TrainQuickNet(TrainLarqZooModel):
     model = ComponentField(QuickNetFactory)
-    epochs = Field(600)
-    batch_size = Field(2048)
+    epochs = Field(150)
+    batch_size = Field(512)
+    lab_blocks = Field((True, True, True, True))
+    model.lab_blocks = lab_blocks
+    resume_from = Field(None)
 
     @Field
     def optimizer(self):
-        binary_opt = tf.keras.optimizers.Adam(
+        return tf.keras.optimizers.Adam(
             learning_rate=CosineDecayWithWarmup(
-                max_learning_rate=1e-2,
+                max_learning_rate=2.5e-3,
                 warmup_steps=self.steps_per_epoch * 5,
                 decay_steps=self.steps_per_epoch * self.epochs,
             )
         )
-        fp_opt = tf.keras.optimizers.SGD(
-            learning_rate=CosineDecayWithWarmup(
-                max_learning_rate=0.1,
-                warmup_steps=self.steps_per_epoch * 5,
-                decay_steps=self.steps_per_epoch * self.epochs,
-            ),
-            momentum=0.9,
-        )
-        return lq.optimizers.CaseOptimizer(
-            (lq.optimizers.Bop.is_binary_variable, binary_opt),
-            default_optimizer=fp_opt,
-        )
-
 
 @task
 class TrainQuickNetSmall(TrainQuickNet):

@@ -1,3 +1,4 @@
+import larq as lq
 from typing import Sequence
 
 import tensorflow as tf
@@ -5,6 +6,7 @@ from zookeeper import ComponentField, Field, cli, task
 
 from larq_zoo.literature.binary_alex_net import BinaryAlexNetFactory
 from larq_zoo.literature.birealnet import BiRealNetFactory
+from larq_zoo.literature.reactnet import ReActNetBNNFactory
 from larq_zoo.literature.densenet import (
     BinaryDenseNet,
     BinaryDenseNet28Factory,
@@ -37,23 +39,53 @@ class TrainBinaryAlexNet(TrainLarqZooModel):
 class TrainBiRealNet(TrainLarqZooModel):
     model = ComponentField(BiRealNetFactory)
 
-    epochs = Field(300)
-    batch_size = Field(512)
+    epochs = Field(150)
+    batch_size = Field(256)
+    lab_blocks = Field((True, True, True, True))
+    resume_from = Field(None)
 
-    learning_rate: float = Field(5e-3)
+    learning_rate: float = Field(2.5e-3)    
     decay_schedule: str = Field("linear")
 
     @Field
     def optimizer(self):
         if self.decay_schedule == "linear_cosine":
-            lr = tf.keras.experimental.LinearCosineDecay(self.learning_rate, 750684)
+            lr = tf.keras.experimental.LinearCosineDecay(self.learning_rate, (1281167/self.batch_size))
         elif self.decay_schedule == "linear":
+            lr = tf.keras.optimizers.schedules.PolynomialDecay(
+                self.learning_rate, (1281167/self.batch_size)*(self.epochs), end_learning_rate=1e-6, power=1.0
+            )
+        else:
+            lr = self.learning_rate
+        return tf.keras.optimizers.Adam(lr)
+
+@task
+class TrainReActNetFromScratch(TrainLarqZooModel):
+    use_progress_bar = Field(True)
+
+    learning_rate: float = Field(2.5e-4)
+    # learning_rate: float = Field(1e-5)
+    epochs: int = Field(75)
+    batch_size: int = Field(128)
+
+    decay_schedule: str = Field("linear")
+    model = ComponentField(ReActNetBNNFactory)
+    # resume_from = Field(None)
+    # resume_from = Field("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/larq/zookeeper-logs/ImageNet/TrainReActNetBasic/ran_org_0000/20220209_1437")
+    resume_from = Field("/tudelft.net/staff-bulk/ewi/insy/VisionLab/students/sfalkena/larq/zookeeper-logs/ImageNet/TrainReActNetBasic/reactnet_dw_mult_bin_1111/20220209_1437")
+    
+    @Field
+    def optimizer(self):
+        if self.decay_schedule == "linear":
             lr = tf.keras.optimizers.schedules.PolynomialDecay(
                 self.learning_rate, 750684, end_learning_rate=0, power=1.0
             )
         else:
             lr = self.learning_rate
         return tf.keras.optimizers.Adam(lr)
+
+
+
 
 
 @task
@@ -131,10 +163,11 @@ class TrainBinaryDenseNet45(TrainBinaryDenseNet28):
 class TrainXNORNet(TrainLarqZooModel):
     model = ComponentField(XNORNetFactory)
 
-    epochs = Field(100)
-    batch_size = Field(1200)
-
-    initial_lr: float = Field(0.001)
+    epochs = Field(60)
+    batch_size = Field(128)    
+    lab_blocks = Field((True, True)) # Ugly fix for now
+    resume_from = Field(None)
+    initial_lr: float = Field(1e-4)
 
     def learning_rate_schedule(self, epoch):
         epoch_dec_1 = 19

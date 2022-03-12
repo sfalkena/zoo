@@ -24,7 +24,8 @@ def xnor_weight_scale(x):
 class XNORNetFactory(ModelFactory):
     """Implementation of [XNOR-Net](https://arxiv.org/abs/1603.05279)"""
 
-    input_quantizer = "ste_sign"
+    # input_quantizer = "ste_sign"
+    input_quantizer = "LAB"
     kernel_quantizer = "xnor_weight_scale"
     kernel_constraint = "weight_clip"
 
@@ -102,26 +103,6 @@ class XNORNetFactory(ModelFactory):
             inputs=self.image_input, outputs=x, name="xnornet"
         )
 
-        # Load weights.
-        if self.weights == "imagenet":
-            # Download appropriate file
-            if self.include_top:
-                weights_path = utils.download_pretrained_model(
-                    model="xnornet",
-                    version="v0.2.0",
-                    file="xnornet_weights.h5",
-                    file_hash="e6ba24f785655260ae76a2ef1fab520e3528243d9c8fac430299cd81dbeabe10",
-                )
-            else:
-                weights_path = utils.download_pretrained_model(
-                    model="xnornet",
-                    version="v0.2.1",
-                    file="xnornet_weights_notop.h5",
-                    file_hash="20a17423090b2c80c6b7a6b62346faa4b2b7dc8d4da99efa792c9351cf86c3d5",
-                )
-            model.load_weights(weights_path)
-        elif self.weights is not None:
-            model.load_weights(self.weights)
         return model
 
 
@@ -129,7 +110,6 @@ def XNORNet(
     *,  # Keyword arguments only
     input_shape: Optional[Sequence[Optional[int]]] = None,
     input_tensor: Optional[utils.TensorType] = None,
-    weights: Optional[str] = "imagenet",
     include_top: bool = True,
     num_classes: int = 1000,
 ):
@@ -159,8 +139,6 @@ def XNORNet(
             It should have exactly 3 inputs channels.
         input_tensor: optional Keras tensor (i.e. output of `layers.Input()`) to use as
             image input for the model.
-        weights: one of `None` (random initialization), "imagenet" (pre-training on
-            ImageNet), or the path to the weights file to be loaded.
         include_top: whether to include the fully-connected layer at the top of the
             network.
         num_classes: optional number of classes to classify images into, only to be
@@ -180,7 +158,6 @@ def XNORNet(
     return XNORNetFactory(
         input_shape=input_shape,
         input_tensor=input_tensor,
-        weights=weights,
         include_top=include_top,
         num_classes=num_classes,
     ).build()
