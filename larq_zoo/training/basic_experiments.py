@@ -17,6 +17,7 @@ from larq_zoo.literature.densenet import (
 from larq_zoo.literature.dorefanet import DoReFaNetFactory
 from larq_zoo.literature.resnet_e import BinaryResNetE18Factory
 from larq_zoo.literature.xnornet import XNORNetFactory
+from larq_zoo.literature.lab_bnn import LabBNNFactory
 from larq_zoo.training.train import TrainLarqZooModel
 
 
@@ -44,7 +45,8 @@ class TrainBiRealNet(TrainLarqZooModel):
     lab_blocks = Field((True, True, True, True))
     resume_from = Field(None)
 
-    learning_rate: float = Field(2.5e-3)    
+    learning_rate: float = Field(2.5e-3) 
+    # learning_rate: float = Field(1e-5)   
     decay_schedule: str = Field("linear")
 
     @Field
@@ -58,7 +60,24 @@ class TrainBiRealNet(TrainLarqZooModel):
         else:
             lr = self.learning_rate
         return tf.keras.optimizers.Adam(lr)
+@task
+class TrainLabBNN(TrainLarqZooModel):
+    model = ComponentField(LabBNNFactory)
 
+    epochs = Field(100)
+    batch_size = Field(256)
+    lab_blocks = Field((True, True, True, True))
+    resume_from = Field(None)
+
+    learning_rate: float = Field(2.5e-3)    
+    decay_schedule: str = Field("linear")
+
+    @Field
+    def optimizer(self):
+        lr = tf.keras.optimizers.schedules.PolynomialDecay(
+            self.learning_rate, (1281167/self.batch_size)*(self.epochs), end_learning_rate=1e-6, power=1.0
+        )
+        return tf.keras.optimizers.Adam(lr)
 @task
 class TrainReActNetFromScratch(TrainLarqZooModel):
     use_progress_bar = Field(True)

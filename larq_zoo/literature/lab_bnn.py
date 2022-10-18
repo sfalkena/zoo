@@ -16,7 +16,7 @@ class LabBNNFactory(ModelFactory):
     input_quantizer = lq.quantizers.LAB()
     kernel_quantizer = "magnitude_aware_sign"
     kernel_constraint = "weight_clip"
-    convbin_blocks: Sequence[bool] = Field()
+    lab_blocks: Sequence[bool] = Field()
 
     kernel_initializer: Union[tf.keras.initializers.Initializer, str] = Field(
         "glorot_normal"
@@ -89,17 +89,17 @@ class LabBNNFactory(ModelFactory):
         out = tf.keras.layers.BatchNormalization()(x)
     
         # Layer 2
-        out = self.residual_block(out, self.convbin_blocks[0], filters=self.filters)
+        out = self.residual_block(out, self.lab_blocks[0], filters=self.filters)
 
         # Layer 3 - 5
         for _ in range(3):
-            out = self.residual_block(out, self.convbin_blocks[0])
+            out = self.residual_block(out, self.lab_blocks[0])
 
         # Layer 6 - 17
         for i in range(3):
-            out = self.residual_block(out, self.convbin_blocks[i+1], double_filters=True)
+            out = self.residual_block(out, self.lab_blocks[i+1], double_filters=True)
             for _ in range(3):
-                out = self.residual_block(out, self.convbin_blocks[i+1])
+                out = self.residual_block(out, self.lab_blocks[i+1])
 
 
         # Layer 18

@@ -58,9 +58,9 @@ class TrainLarqZooModel(Experiment):
             print(f"resuming path: {self.resume_from}")
             return Path(self.resume_from)
         else:
-            foldername = self.experiment_name+'_'+''.join([str(int(block == True)) for block in self.convbin_blocks])
+            foldername = self.experiment_name+'_'+''.join([str(int(block == True)) for block in self.lab_blocks])
             return (
-                Path(PATH_OF_REPOSITORY)
+                Path("/home/sf/Documents/LAB/")
                 / "zookeeper-logs"
                 / self.dataset.__class__.__name__
                 / self.__class__.__name__
@@ -111,8 +111,8 @@ class TrainLarqZooModel(Experiment):
             decoders=self.preprocessing.decoders
         )
         if self.dataset.__class__.__name__ == 'ImageNet':
-            train_cache = PATH_TO_STORE_IMAGENET_TRAIN_CACHE_FILE 
-        train_data = (
+            train_cache = PATH_TO_STORE_IMAGENET_TRAIN_CACHE_FILE
+            train_data = (
             train_data.cache(train_cache)
             .shuffle(10 * self.batch_size)
             .repeat()
@@ -123,19 +123,39 @@ class TrainLarqZooModel(Experiment):
             .batch(self.batch_size)
             .prefetch(1)
         )
+        else:
+            train_data = (
+                train_data.cache()
+                .shuffle(10 * self.batch_size)
+                .repeat()
+                .map(
+                    functools.partial(self.preprocessing, training=True),
+                    num_parallel_calls=tf.data.experimental.AUTOTUNE,
+                )
+                .batch(self.batch_size)
+                .prefetch(1)
+            )
 
         validation_data, num_validation_examples = self.dataset.validation(
             decoders=self.preprocessing.decoders
         )
         if self.dataset.__class__.__name__ == 'ImageNet':
             val_cache = PATH_TO_STORE_IMAGENET_VAL_CACHE_FILE
-        validation_data = (
-            validation_data.cache(val_cache)
-            .repeat()
-            .map(self.preprocessing, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            .batch(self.batch_size)
-            .prefetch(1)
-        )
+            validation_data = (
+                validation_data.cache(val_cache)
+                .repeat()
+                .map(self.preprocessing, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+                .batch(self.batch_size)
+                .prefetch(1)
+            )
+        else:
+            validation_data = (
+                validation_data.cache()
+                .repeat()
+                .map(self.preprocessing, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+                .batch(self.batch_size)
+                .prefetch(1)
+            )
         with utils.get_distribution_scope(self.batch_size):
 
 
