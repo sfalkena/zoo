@@ -13,7 +13,6 @@ class LabBNNFactory(ModelFactory):
     """Implementation of [LAB-BNN]"""
     
     filters: int = Field(64)
-    input_quantizer = lq.quantizers.LAB()
     kernel_quantizer = "magnitude_aware_sign"
     kernel_constraint = "weight_clip"
     lab_blocks: Sequence[bool] = Field()
@@ -23,9 +22,10 @@ class LabBNNFactory(ModelFactory):
     )
 
     def residual_block(
-        self, x, use_binconv: bool, double_filters: bool = False, filters: Optional[int] = None
+        self, x, use_lab: bool, double_filters: bool = False, filters: Optional[int] = None
     ) -> tf.Tensor:
         assert not (double_filters and filters)
+        self.input_quantizer = lq.quantizers.LAB() if use_lab else lq.quantizers.SteSign()
 
         # Compute dimensions
         in_filters = x.get_shape().as_list()[-1]
@@ -48,7 +48,7 @@ class LabBNNFactory(ModelFactory):
             (3, 3),
             strides=1 if out_filters == in_filters else 2,
             padding="same",
-            # input_quantizer=self.input_quantizer,
+            input_quantizer=self.input_quantizer,
             kernel_quantizer=self.kernel_quantizer,
             kernel_initializer=self.kernel_initializer,
             kernel_constraint=self.kernel_constraint,
@@ -119,6 +119,7 @@ def LabBNN(
     input_tensor: Optional[utils.TensorType] = None,
     include_top: bool = True,
     num_classes: int = 1000,
+    lab_blocks: Sequence[int],
 ) -> tf.keras.models.Model:
     """Instantiates the LAB-BNN architecture.
 
@@ -156,4 +157,5 @@ def LabBNN(
         input_tensor=input_tensor,
         input_shape=input_shape,
         num_classes=num_classes,
+        lab_blocks=lab_blocks,
     ).build()

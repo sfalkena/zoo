@@ -60,7 +60,7 @@ class TrainLarqZooModel(Experiment):
         else:
             foldername = self.experiment_name+'_'+''.join([str(int(block == True)) for block in self.lab_blocks])
             return (
-                Path("/home/sf/Documents/LAB/")
+                Path(os.getcwd())
                 / "zookeeper-logs"
                 / self.dataset.__class__.__name__
                 / self.__class__.__name__

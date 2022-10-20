@@ -27,7 +27,7 @@ class BiRealNetFactory(ModelFactory):
     ) -> tf.Tensor:
         assert not (double_filters and filters)
 
-        self.input_quantizer = lq.quantizers.Sauvola() if use_lab else lq.quantizers.SteSign()
+        self.input_quantizer = lq.quantizers.LAB() if use_lab else lq.quantizers.SteSign()
         # Compute dimensions
         in_filters = x.get_shape().as_list()[-1]
         out_filters = filters or in_filters if not double_filters else 2 * in_filters
